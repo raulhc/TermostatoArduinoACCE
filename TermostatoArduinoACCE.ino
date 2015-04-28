@@ -1,5 +1,7 @@
 /**********************************************
           Termostato Arduino ACCE
+          
+          Por raulhc @ 2015
 ***********************************************/
 #include <OneWire.h>
 #include <DallasTemperature.h>
@@ -18,15 +20,28 @@ void setup() {
 
 void loop() {
   
-  // Pedimos temperatura a todos los sensores conectados, en nuestro caso solo uno
-  sensors.requestTemperatures();
-  // Leemos la temperatura del primer sensor conectado en celcius.
-  // La resolucion por defecto es de 12 bits, incremento de 0.0625°C
-  float temperature = sensors.getTempCByIndex(0);
+  // Leemos la temperatura
+  float temperature = getTemperature();
   
   // Enviamos al puerto serie la Lectura de temperatura
   Serial.println(temperature);
   
   // Hacemos una pausa de un segundo
   delay(1000);
+}
+
+/**
+ * Leer temperatura de Sensor DS18B20. Se devolvera la lectura redondeada a 1 decimal
+*/
+float getTemperature() {
+  
+    // Pedimos lectura de temperatura a todos los sensores conectados
+  sensors.requestTemperatures();
+  
+  // Leemos la temperatura del primer sensor conectado en celcius.
+  // La resolucion por defecto es de 12 bits, incremento de 0.0625°C
+  float temperature = sensors.getTempCByIndex(0);
+  
+  // Devolver la temperatura con redondeo a un decimal
+  return round(temperature * 10) / 10.0;
 }
