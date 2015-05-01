@@ -14,10 +14,11 @@
 OneWire oneWire(ONE_WIRE_BUS);       // Creamos objeto para comunicarnos con dispositivos 1-wire.
 DallasTemperature sensors(&oneWire); // Creamos objeto para comunicarnos con sensores de temperatura.
 
-float  _temperatureSet  = 20.0; // Temperatura que se debe mantener, se inicializa con un valor de 20.
-float  _temperatureRead = 0.0;  // Temperatura leida de la sonda.
-int    _actionMode      = 0;    // Indicara el modo de accion: -1 Enfriar, 0 Sin accion, 1 Calentar 
-String _temperatureTime = "";   // Fecha y hora en la que se produjo la ultima lectura de temperatura
+float  _temperatureSet    = 20.0; // Temperatura que se debe mantener, se inicializa con un valor de 20.
+float  _temperatureRead   = 0.0;  // Temperatura leida de la sonda.
+int    _actionMode        = 0;    // Indicara el modo de accion: -1 Enfriar, 0 Sin accion, 1 Calentar 
+String _temperatureTime   = "";   // Fecha y hora en la que se produjo la ultima lectura de temperatura
+float  _temperatureMargin = 0.5;  // Margen admisible en el mantenimiento de la temperatura
 
 /**
   * Configuracion de Arduino
@@ -111,13 +112,13 @@ void getActionMode() {
   // Por defecto indicamos que no es necesaria accion alguna
   _actionMode = 0;
   
-  // Si la temperatura es menor de la temperatura objetivo debemos calentar
-  if (_temperatureRead < _temperatureSet) {
+  // Si la temperatura es menor de la temperatura objetivo menos el margen de tolerancia, entonces activar el modo calor
+  if (_temperatureRead < (_temperatureSet - _temperatureMargin)) {
     _actionMode = 1;
   }
   
-  // Si la temperatura es mayor de la temperatura objetivo debemos enfriar
-  if (_temperatureRead > _temperatureSet) {
+  // Si la temperatura es mayor de la temperatura objetivo mas el margen de tolerancia, entonces activar el modo frio
+  if (_temperatureRead > (_temperatureSet + _temperatureMargin)) {
     _actionMode = -1;
   }
 }
