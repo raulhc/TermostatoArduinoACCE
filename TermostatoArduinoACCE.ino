@@ -14,6 +14,13 @@
 
 #define CONFIG_FILE "/mnt/sd/termostatoACCE.config" // Fichero de configuracion
 
+#define DATA_TEMPERATURE_SET    "temperatureSet"
+#define DATA_TEMPERATURE_MARGIN "temperatureMargin"
+#define DATA_TEMPERATURE_READ   "temperatureRead"
+#define DATA_TEMPERATURE_TIME   "temperatureTime"
+#define DATA_ACTION_MODE        "actionMode"
+#define DATA_CONFIG_CHANGE      "configChanged"
+
 OneWire oneWire(ONE_WIRE_BUS);       // Creamos objeto para comunicarnos con dispositivos 1-wire.
 DallasTemperature sensors(&oneWire); // Creamos objeto para comunicarnos con sensores de temperatura.
 
@@ -22,7 +29,6 @@ float  _temperatureRead   = 0.0;  // Temperatura leida de la sonda.
 int    _actionMode        = 0;    // Indicara el modo de accion: -1 Enfriar, 0 Sin accion, 1 Calentar 
 String _temperatureTime   = "";   // Fecha y hora en la que se produjo la ultima lectura de temperatura
 float  _temperatureMargin = 0.5;  // Margen admisible en el mantenimiento de la temperatura
-
 
 /**
   * Configuracion de Arduino
@@ -45,6 +51,9 @@ void setup() {
 
   // Leemos los datos de configuracion del fichero "termostatoACCE.config" que tenemos en la SD
   readConfigFile();
+  
+  // Escribimos la configuracion actual en Linux
+  writeConfigToLinux();
 }
 
 /**
@@ -63,6 +72,15 @@ void loop() {
   
   // Procesamos la accion a ejecutar
   processAction();
+  
+  // Escribir los datos a la parte Linux
+  writeDataToLinux();
+  
+  // Leemos la configuracion de Linux
+  if (readConfigFromLinux()) {
+    // Si ha cambiado escribimos la configuracion en la microSD
+    writeConfigFile();
+  }
   
   // *** DEPURACION *** 
 
@@ -182,7 +200,7 @@ void readConfigFile() {
       // El orden podria variar, asi que leemos los dos posible datos
       readConfigData(configFile, property1, value1);
       readConfigData(configFile, property2, value2);
-      if (property1 == "temperatureSet") {
+      if (property1 == DATA_TEMPERATURE_SET) {
         _temperatureSet    = value1;
         _temperatureMargin = value2;
       } else {
@@ -212,8 +230,8 @@ void writeConfigFile() {
   
   // Si se ha inicializado correctamente el acceso al fichero
   if (configFile) {
-    writeConfigData(configFile, "temperatureSet", _temperatureSet);
-    writeConfigData(configFile, "temperatureMargin", _temperatureMargin);
+    writeConfigData(configFile, DATA_TEMPERATURE_SET, _temperatureSet);
+    writeConfigData(configFile, DATA_TEMPERATURE_MARGIN, _temperatureMargin);
     configFile.close();
   }
 }
@@ -240,3 +258,60 @@ void writeConfigData(File& file, String property, float value) {
   file.print(value);
   file.print("]\n");
 }
+
+/**
+  * Lee los datos de configuracion de la parte linux si es necesario.
+  * La funcion devuelve true si los datos se han leido debido a que
+  * se ha activado la bandera que indica que han cambiado.
+  */
+boolean readConfigFromLinux() {
+  // Leemos la bandera que indicaria que la configuracion ha cambiado
+  String configChanged = readStringDataFromLinux(DATA_CONFIG_CHANGE);
+  
+  // Si vale "1" entonces leemos la configuracion
+  if (configChanged == "1") {
+    _temperatureSet    = readFloatDataFromLinux(DATA_TEMPERATURE_SET);
+    _temperatureMargin = readFloatDataFromLinux(DATA_TEMPERATURE_MARGIN);
+    // Cambiamos la bandera a 0 para que indicar que ya esta leida la configuracion
+    Bridge.put(DATA_CONFIG_CHANGE, "0");
+  }
+  
+  // Devolvera "true" si la configuracion se ha leido de Linux y "false" en caso contrario.
+  return configChanged == "1";
+}
+
+/**
+  * Escribe la configuracion actual a la parte Linux.
+  */
+void writeConfigToLinux() {
+  Bridge.put(DATA_TEMPERATURE_SET,    String(_temperatureSet));
+  Bridge.put(DATA_TEMPERATURE_MARGIN, String(_temperatureMargin));
+  Bridge.put(DATA_CONFIG_CHANGE, "0");
+}
+
+/**
+  * Escribe los datos leidos de temperautra, fecha / hora y modo de accion a la parte linux.
+  */
+void writeDataToLinux() {
+  Bridge.put(DATA_TEMPERATURE_READ,   String(_temperatureRead));
+  Bridge.put(DATA_TEMPERATURE_TIME,   _temperatureTime);
+  Bridge.put(DATA_ACTION_MODE,        String(_actionMode));
+}
+
+/**
+  * Lee un dato de la parte Linux
+  */
+String readStringDataFromLinux(char* dataName) {
+  char value[5];
+  Bridge.get(dataName, value, 5);
+  return String(value);
+}
+
+/**
+  * Lee un dato de la parte Linux y lo devuelve como float
+  */
+float readFloatDataFromLinux(char* dataName) {
+  String value = readStringDataFromLinux(dataName);
+  return value.toFloat();
+}
+
