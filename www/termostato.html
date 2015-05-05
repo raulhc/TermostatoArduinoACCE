@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Termostato Arduino ACCE</title>
+</head>
+<body>
+	<span>Temperatura actual: <span><span id="temperatureRead"></span>ºC
+	<br><br>
+	<span id="temperatureTime"></span>
+	<br><br>
+	<span id="actionMode"></span>
+	<hr>
+	<span>Configuración:</span>
+	<br><br>
+	<span>Temperatura objetivo: </span><input type="text" id="temperatureSet">ºC
+	<br>
+	<span>Margen temperatura: </span><input type="text" id="temperatureMargin">ºC
+	<br><br>
+	<input type="button" onclick="saveConfiguration();" value="Guardar">
+	
+
+	<!-- jQuery -->
+	<script src="//code.jquery.com/jquery.js"></script>
+
+	<script type="text/javascript">
+
+		var _temperatureSet;
+		var _temperatureMargin;
+		var _temperatureRead;
+		var _temperatureTime;
+		var _actionMode;
+
+		// Cuando se termine de cargar la pagina cargamos la información de Arduino
+		$(document).ready(function() {
+  			getArduinoData();
+		});
+
+		// Ejecutar de forma automtica la carga de información de Arduino cada 5 segundos
+  		setInterval(getArduinoData, 5000);
+
+
+		/* -------------------------------------------------------------------
+		 * Obtiene con una llamada Ajax la información de Arduino
+		 * -----------------------------------------------------------------*/
+		function getArduinoData() {
+			$.ajax({ 
+				type: "GET",
+				dataType: "jsonp",
+				url: "http://arduino.local/data/get",
+				success: function(data){    
+					_temperatureSet    = data.value.temperatureSet;
+					_temperatureMargin = data.value.temperatureMargin;
+					_temperatureRead   = data.value.temperatureRead;   
+					_temperatureTime   = data.value.temperatureTime;
+					_actionMode        = data.value.actionMode;
+					showArduinoData();
+				}
+			});		
+		}
+
+		/* -------------------------------------------------------------------
+		 * Muestra los datos leidos de Arduino en la patalla
+		 * -----------------------------------------------------------------*/
+		function showArduinoData() {
+			// Mostramos la temperatura objetivo si aun no se ha cargado esta informacion
+			if ($("#temperatureSet").val() == "") {
+				$("#temperatureSet").val(_temperatureSet);
+			}
+			// Mostramos el margen de temperatura si aun no se ha cargado esta informacion
+			if ($("#temperatureMargin").val() == "") {
+				$("#temperatureMargin").val(_temperatureMargin);
+			}
+			// La informacion de Lectura la mostramos siempre:
+			$("#temperatureRead").text(_temperatureRead);
+			$("#temperatureTime").text(_temperatureTime);
+
+			if (_actionMode == "-1") {
+				$("#actionMode").text("Enfriando");	
+			}
+			if (_actionMode == "0") {
+				$("#actionMode").text("Sin acción");	
+			}
+			if (_actionMode == "1") {
+				$("#actionMode").text("Calentando");	
+			}
+		}
+
+		/* -------------------------------------------------------------------
+		 * Guardar la configuracion en Arduino
+		 * -----------------------------------------------------------------*/
+		function saveConfiguration() {
+
+			// Enviamos la temperatura objetivo a Arduino
+			$.getJSON("http://arduino.local/data/put/temperatureSet/" + $("#temperatureSet").val());
+
+			// Enviamos el margen de temperatura a Arduino
+			$.getJSON("http://arduino.local/data/put/temperatureMargin/" + $("#temperatureMargin").val());
+
+			// Le indicamos a Arduino que la configuracion ha cambiado
+			$.getJSON("http://arduino.local/data/put/configChanged/1");
+		}
+	</script>
+</body>
+</html>

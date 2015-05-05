@@ -44,10 +44,12 @@ void setup() {
   // Establecemos los pines de accion calor / frio como de salida
   pinMode(HEATING_DEVICE_PIN, OUTPUT);
   pinMode(COOLING_DEVICE_PIN, OUTPUT);
+  digitalWrite(HEATING_DEVICE_PIN, LOW);
+  digitalWrite(COOLING_DEVICE_PIN, LOW);
   
   // Comunicacion serie para enviar datos de depuracion
   Serial.begin(9600); 
-  while(!Serial); // Esperar a que la comunicacion serie este activa
+  //while(!Serial); // Esperar a que la comunicacion serie este activa
 
   // Leemos los datos de configuracion del fichero "termostatoACCE.config" que tenemos en la SD
   readConfigFile();
@@ -116,16 +118,16 @@ void processAction() {
   
   switch (_actionMode) {
     case -1:
-      digitalWrite(HEATING_DEVICE_PIN, HIGH);
-      digitalWrite(COOLING_DEVICE_PIN, LOW);
+      digitalWrite(HEATING_DEVICE_PIN, LOW);
+      digitalWrite(COOLING_DEVICE_PIN, HIGH);
       break;
     case 0:
       digitalWrite(HEATING_DEVICE_PIN, LOW);
       digitalWrite(COOLING_DEVICE_PIN, LOW);
       break;
     case 1:
-      digitalWrite(HEATING_DEVICE_PIN, LOW);
-      digitalWrite(COOLING_DEVICE_PIN, HIGH);
+      digitalWrite(HEATING_DEVICE_PIN, HIGH);
+      digitalWrite(COOLING_DEVICE_PIN, LOW);
       break;
   }
   
