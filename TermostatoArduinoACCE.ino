@@ -18,6 +18,7 @@
 #define DATA_TEMPERATURE_MARGIN "temperatureMargin"
 #define DATA_TEMPERATURE_READ   "temperatureRead"
 #define DATA_TEMPERATURE_TIME   "temperatureTime"
+#define DATA_PROBE_OFFSET       "probeOffset"
 #define DATA_ACTION_MODE        "actionMode"
 #define DATA_CONFIG_CHANGE      "configChanged"
 
@@ -29,6 +30,7 @@ float  _temperatureRead   = 0.0;  // Temperatura leida de la sonda.
 int    _actionMode        = 0;    // Indicara el modo de accion: -1 Enfriar, 0 Sin accion, 1 Calentar 
 String _temperatureTime   = "";   // Fecha y hora en la que se produjo la ultima lectura de temperatura
 float  _temperatureMargin = 0.5;  // Margen admisible en el mantenimiento de la temperatura
+float  _probeOffset       = 0.0;  // Desplazamiento de sonda. 
 
 /**
   * Configuracion de Arduino
@@ -165,6 +167,8 @@ void readTemperature() {
   // La resolucion por defecto es de 12 bits, incremento de 0.0625°C
   // Redondeamos el resultado a un decimal
   _temperatureRead = round(sensors.getTempCByIndex(0) * 10) / 10.0;
+  // Asignamos la lectura de temperatura ajustado con el desplazamiento de sonda
+  _temperatureRead += _probeOffset;
 }
 
 /**
@@ -196,19 +200,16 @@ void readConfigFile() {
     
     // Si tenemos acceso al fichero leemos la configuracion
     if (configFile) {
-      String property1, property2;
-      float value1, value2;
+      String property;
+      float value;
       
-      // El orden podria variar, asi que leemos los dos posible datos
-      readConfigData(configFile, property1, value1);
-      readConfigData(configFile, property2, value2);
-      if (property1 == DATA_TEMPERATURE_SET) {
-        _temperatureSet    = value1;
-        _temperatureMargin = value2;
-      } else {
-        _temperatureSet    = value2;
-        _temperatureMargin = value1;
-      } 
+      // Leemos los tres datos posibles y los asignamos a la propiedad que corresponga
+      readConfigData(configFile, property, value);
+      setConfigData(property, value);
+      readConfigData(configFile, property, value);
+      setConfigData(property, value);
+      readConfigData(configFile, property, value);
+      setConfigData(property, value);
       
     configFile.close();
     } 
@@ -217,6 +218,8 @@ void readConfigFile() {
   Serial.println(_temperatureSet);
   Serial.print("temperatureMargin = ");
   Serial.println(_temperatureMargin);
+  Serial.println("probeOffset = ");
+  Serial.println(_probeOffset);
   Serial.println();
 }
 
@@ -234,8 +237,18 @@ void writeConfigFile() {
   if (configFile) {
     writeConfigData(configFile, DATA_TEMPERATURE_SET, _temperatureSet);
     writeConfigData(configFile, DATA_TEMPERATURE_MARGIN, _temperatureMargin);
+    writeConfigData(configFile, DATA_PROBE_OFFSET, _probeOffset);
     configFile.close();
   }
+}
+
+/**
+  * Asigna el valor leido de configuracion a la propiedad que corresponde. 
+  */
+void setConfigData(String &property, float& value) {
+    if (property == DATA_TEMPERATURE_SET) _temperatureSet = value;
+    if (property == DATA_TEMPERATURE_MARGIN) _temperatureMargin = value;
+    if (property == DATA_PROBE_OFFSET) _probeOffset = value;
 }
 
 /**
@@ -274,6 +287,7 @@ boolean readConfigFromLinux() {
   if (configChanged == "1") {
     _temperatureSet    = readFloatDataFromLinux(DATA_TEMPERATURE_SET);
     _temperatureMargin = readFloatDataFromLinux(DATA_TEMPERATURE_MARGIN);
+    _probeOffset       = readFloatDataFromLinux(DATA_PROBE_OFFSET);
     // Cambiamos la bandera a 0 para que indicar que ya esta leida la configuracion
     Bridge.put(DATA_CONFIG_CHANGE, "0");
   }
@@ -288,6 +302,7 @@ boolean readConfigFromLinux() {
 void writeConfigToLinux() {
   Bridge.put(DATA_TEMPERATURE_SET,    String(_temperatureSet));
   Bridge.put(DATA_TEMPERATURE_MARGIN, String(_temperatureMargin));
+  Bridge.put(DATA_PROBE_OFFSET,       String(_probeOffset));
   Bridge.put(DATA_CONFIG_CHANGE, "0");
 }
 

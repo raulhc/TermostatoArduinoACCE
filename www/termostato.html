@@ -16,6 +16,8 @@
 	<span>Temperatura objetivo: </span><input type="text" id="temperatureSet">ºC
 	<br>
 	<span>Margen temperatura: </span><input type="text" id="temperatureMargin">ºC
+	<br>
+	<span>Desplazamiento de lectura de sonda: </span><input type="text" id="probeOffset">ºC
 	<br><br>
 	<input type="button" onclick="saveConfiguration();" value="Guardar">
 	
@@ -29,7 +31,9 @@
 		var _temperatureMargin;
 		var _temperatureRead;
 		var _temperatureTime;
+		var _probeOffset;
 		var _actionMode;
+		var _configReaded = false;
 
 		// Cuando se termine de cargar la pagina cargamos la información de Arduino
 		$(document).ready(function() {
@@ -53,6 +57,7 @@
 					_temperatureMargin = data.value.temperatureMargin;
 					_temperatureRead   = data.value.temperatureRead;   
 					_temperatureTime   = data.value.temperatureTime;
+					_probeOffset       = data.value.probeOffset;
 					_actionMode        = data.value.actionMode;
 					showArduinoData();
 				}
@@ -63,14 +68,15 @@
 		 * Muestra los datos leidos de Arduino en la patalla
 		 * -----------------------------------------------------------------*/
 		function showArduinoData() {
-			// Mostramos la temperatura objetivo si aun no se ha cargado esta informacion
-			if ($("#temperatureSet").val() == "") {
+			// Si es la primera lectura mostramos la configuracion actual
+			if (!_configReaded) {
 				$("#temperatureSet").val(_temperatureSet);
-			}
-			// Mostramos el margen de temperatura si aun no se ha cargado esta informacion
-			if ($("#temperatureMargin").val() == "") {
 				$("#temperatureMargin").val(_temperatureMargin);
+				$("#probeOffset").val(_probeOffset);
+				// Indicamos que la configuracion se ha leido para que no se haga de nuevo
+				_configReaded = true;
 			}
+
 			// La informacion de Lectura la mostramos siempre:
 			$("#temperatureRead").text(_temperatureRead);
 			$("#temperatureTime").text(_temperatureTime);
@@ -96,6 +102,9 @@
 
 			// Enviamos el margen de temperatura a Arduino
 			$.getJSON("http://arduino.local/data/put/temperatureMargin/" + $("#temperatureMargin").val());
+
+			// Enviamos el desplazamiento de la sonda a Arduino
+			$.getJSON("http://arduino.local/data/put/probeOffset/" + $("#probeOffset").val());
 
 			// Le indicamos a Arduino que la configuracion ha cambiado
 			$.getJSON("http://arduino.local/data/put/configChanged/1");
