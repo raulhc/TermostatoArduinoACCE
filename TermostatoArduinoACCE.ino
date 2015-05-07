@@ -21,6 +21,7 @@
 #define DATA_PROBE_OFFSET       "probeOffset"
 #define DATA_ACTION_MODE        "actionMode"
 #define DATA_CONFIG_CHANGE      "configChanged"
+#define DATA_WORKING_MODE       "workingMode"
 
 OneWire oneWire(ONE_WIRE_BUS);       // Creamos objeto para comunicarnos con dispositivos 1-wire.
 DallasTemperature sensors(&oneWire); // Creamos objeto para comunicarnos con sensores de temperatura.
@@ -31,6 +32,7 @@ int    _actionMode        = 0;    // Indicara el modo de accion: -1 Enfriar, 0 S
 String _temperatureTime   = "";   // Fecha y hora en la que se produjo la ultima lectura de temperatura
 float  _temperatureMargin = 0.5;  // Margen admisible en el mantenimiento de la temperatura
 float  _probeOffset       = 0.0;  // Desplazamiento de sonda. 
+int    _workingMode       = 0;    // Indica el modo de trabajo: -1 Solo enfriar, 0 Frio / Calor, 1 Solo Calentar
 
 /**
   * Configuracion de Arduino
@@ -118,19 +120,33 @@ void loop() {
   */
 void processAction() {
   
-  switch (_actionMode) {
-    case -1:
+  // Si trabajamos con Frio y Calor
+  if (_workingMode == 0) {
+    switch (_actionMode) {
+      case -1:
+        digitalWrite(HEATING_DEVICE_PIN, LOW);
+        digitalWrite(COOLING_DEVICE_PIN, HIGH);
+        break;
+      case 0:
+        digitalWrite(HEATING_DEVICE_PIN, LOW);
+        digitalWrite(COOLING_DEVICE_PIN, LOW);
+        break;
+      case 1:
+        digitalWrite(HEATING_DEVICE_PIN, HIGH);
+        digitalWrite(COOLING_DEVICE_PIN, LOW);
+        break;
+    }
+  } else {
+    // Si trabjamos con frio o calor la salida del rele de enfriar siempre a inactiva por defecto
+    digitalWrite(COOLING_DEVICE_PIN, LOW);
+
+    // Como se usa la salida del rele de calor para ambos modos de funcionamiento esta se activara
+    // siempre y cuando el modo de accion sea distinto de 0
+    if (_actionMode == 0) {
       digitalWrite(HEATING_DEVICE_PIN, LOW);
-      digitalWrite(COOLING_DEVICE_PIN, HIGH);
-      break;
-    case 0:
-      digitalWrite(HEATING_DEVICE_PIN, LOW);
-      digitalWrite(COOLING_DEVICE_PIN, LOW);
-      break;
-    case 1:
+    } else {
       digitalWrite(HEATING_DEVICE_PIN, HIGH);
-      digitalWrite(COOLING_DEVICE_PIN, LOW);
-      break;
+    } 
   }
   
 }
@@ -152,6 +168,12 @@ void getActionMode() {
   if (_temperatureRead > (_temperatureSet + _temperatureMargin)) {
     _actionMode = -1;
   }
+  
+  // El modo de accion puede variar dependiendo del modo de trabajo
+  // Si estamos en un modo de trabajo que sea solo frio o solo calor solo se activara el modo de accion si 
+  // el valor de este coincide con el del modo de trabajo, en otro caso no se realizara accion alguna
+  if (_workingMode != 0 && _workingMode != _actionMode) _actionMode = 0;
+  
 }
 
 
@@ -210,6 +232,8 @@ void readConfigFile() {
       setConfigData(property, value);
       readConfigData(configFile, property, value);
       setConfigData(property, value);
+      readConfigData(configFile, property, value);
+      setConfigData(property, value);
       
     configFile.close();
     } 
@@ -218,8 +242,10 @@ void readConfigFile() {
   Serial.println(_temperatureSet);
   Serial.print("temperatureMargin = ");
   Serial.println(_temperatureMargin);
-  Serial.println("probeOffset = ");
+  Serial.print("probeOffset = ");
   Serial.println(_probeOffset);
+  Serial.print("workingMode = ");
+  Serial.println(_workingMode);
   Serial.println();
 }
 
@@ -235,9 +261,10 @@ void writeConfigFile() {
   
   // Si se ha inicializado correctamente el acceso al fichero
   if (configFile) {
-    writeConfigData(configFile, DATA_TEMPERATURE_SET, _temperatureSet);
-    writeConfigData(configFile, DATA_TEMPERATURE_MARGIN, _temperatureMargin);
-    writeConfigData(configFile, DATA_PROBE_OFFSET, _probeOffset);
+    writeConfigData(configFile, DATA_TEMPERATURE_SET, String(_temperatureSet));
+    writeConfigData(configFile, DATA_TEMPERATURE_MARGIN, String(_temperatureMargin));
+    writeConfigData(configFile, DATA_PROBE_OFFSET, String(_probeOffset));
+    writeConfigData(configFile, DATA_WORKING_MODE, String(_workingMode));
     configFile.close();
   }
 }
@@ -266,7 +293,7 @@ void readConfigData(File& file, String& property, float& value) {
 /**
   * Escribe un dato de configuracion
   */
-void writeConfigData(File& file, String property, float value) {
+void writeConfigData(File& file, String property, String value) {
   file.print("[");
   file.print(property);
   file.print("=");
@@ -288,6 +315,7 @@ boolean readConfigFromLinux() {
     _temperatureSet    = readFloatDataFromLinux(DATA_TEMPERATURE_SET);
     _temperatureMargin = readFloatDataFromLinux(DATA_TEMPERATURE_MARGIN);
     _probeOffset       = readFloatDataFromLinux(DATA_PROBE_OFFSET);
+    _workingMode       = readFloatDataFromLinux(DATA_WORKING_MODE);
     // Cambiamos la bandera a 0 para que indicar que ya esta leida la configuracion
     Bridge.put(DATA_CONFIG_CHANGE, "0");
   }
@@ -303,6 +331,7 @@ void writeConfigToLinux() {
   Bridge.put(DATA_TEMPERATURE_SET,    String(_temperatureSet));
   Bridge.put(DATA_TEMPERATURE_MARGIN, String(_temperatureMargin));
   Bridge.put(DATA_PROBE_OFFSET,       String(_probeOffset));
+  Bridge.put(DATA_WORKING_MODE,       String(_workingMode));
   Bridge.put(DATA_CONFIG_CHANGE, "0");
 }
 

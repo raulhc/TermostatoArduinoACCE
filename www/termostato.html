@@ -18,6 +18,8 @@
 	<span>Margen temperatura: </span><input type="text" id="temperatureMargin">ºC
 	<br>
 	<span>Desplazamiento de lectura de sonda: </span><input type="text" id="probeOffset">ºC
+	<br>
+	<span>Modo de trabajo (-1 Solo frío, 0 Frío / Calor, 1 Solo Calor): </span><input type="text" id="workingMode">
 	<br><br>
 	<input type="button" onclick="saveConfiguration();" value="Guardar">
 	
@@ -33,6 +35,7 @@
 		var _temperatureTime;
 		var _probeOffset;
 		var _actionMode;
+		var _workingMode;
 		var _configReaded = false;
 
 		// Cuando se termine de cargar la pagina cargamos la información de Arduino
@@ -59,6 +62,7 @@
 					_temperatureTime   = data.value.temperatureTime;
 					_probeOffset       = data.value.probeOffset;
 					_actionMode        = data.value.actionMode;
+					_workingMode       = data.value.workingMode;
 					showArduinoData();
 				}
 			});		
@@ -73,6 +77,7 @@
 				$("#temperatureSet").val(_temperatureSet);
 				$("#temperatureMargin").val(_temperatureMargin);
 				$("#probeOffset").val(_probeOffset);
+				$("#workingMode").val(_workingMode);
 				// Indicamos que la configuracion se ha leido para que no se haga de nuevo
 				_configReaded = true;
 			}
@@ -105,6 +110,9 @@
 
 			// Enviamos el desplazamiento de la sonda a Arduino
 			$.getJSON("http://arduino.local/data/put/probeOffset/" + $("#probeOffset").val());
+
+			// Enviamos el modo de trabajo Arduino
+			$.getJSON("http://arduino.local/data/put/actionMode/" + $("#actionMode").val());
 
 			// Le indicamos a Arduino que la configuracion ha cambiado
 			$.getJSON("http://arduino.local/data/put/configChanged/1");
