@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="">
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>Termostato</title>
+
+		<!-- Bootstrap CSS -->
+		<link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+
+		<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+		<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+		<!--[if lt IE 9]>
+			<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+			<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+		<![endif]-->
+	</head>
+	<body>
+		<br>
+		<div id="main-container" class="container">			
+			<div class="panel panel-primary">
+				<div class="panel-heading">
+					<h1 class="panel-title text-center">Control Temperatura</h1>
+				</div>
+				<div class="panel-body">
+					<h3 class="text-center">Temperatura: <span class="label label-primary" id="temperatureRead"></span></h3>
+					<h4 class="text-center"><span id="temperatureTime"></span></h4>				   
+					<h4 class="text-center"><span id="noActionLabel" class="label label-default">Sin acción</span></h4>
+					<h4 class="text-center"><span id="coolingLabel" class="label label-primary">Enfriando</span></h4>
+					<h4 class="text-center"><span id="heatingLabel" class="label label-danger">Calentando</span></h4>
+				</div>
+			</div>
+			<div class="panel panel-primary">
+				<div class="panel-heading">
+					<h1 class="panel-title text-center">Configuración</h1>
+				</div>
+				<div class="panel-body">
+					<div class="container">
+						<div class="col-xs-6 col-sm-6 col-md-6 col-lg-6">
+							<h4 class="text-center">Temperatura: <span class="label label-success" id="temperatureSet"></span></h4>
+						</div>
+						<div class="col-xs-6 col-sm-6 col-md-6 col-lg-6">
+							<h4 class="text-center">Margen: <span class="label label-success" id="temperatureMargin"></span></h4>	
+						</div>
+					</div>
+					<br>
+					<div class="container">
+						<div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 text-center">
+							<button type="button" class="btn btn-primary" onclick="viewConfiguration();">Configurar</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div id="config-container" class="container">
+			<div class="panel panel-primary">
+				<div class="panel-heading">
+					<h1 class="panel-title text-center">Cambiar Configuración</h1>
+				</div>
+				<div class="panel-body">
+					<form action="" method="POST" class="form-horizontal" role="form" onsubmit="saveConfiguration(); return false;">
+						<div class="form-group">
+							<label for="inputTemperatureSet" class="col-xs-7 col-sm-2 col-md-2 col-lg-2">Temperatura:</label>
+							<div class="col-xs-5 col-sm-2 col-md-2 col-lg-2">
+								<input type="number" name="temperature" id="inputTemperatureSet" class="form-control" value="20.0" min="0" max="100" step="0.5" required="required" title="Temperatura">
+							</div>
+						</div>
+						<div class="form-group">
+			  				<label for="inputTemperatureMargin" class="col-xs-7 col-sm-2 col-md-2 col-lg-2">Diferencia Tª:</label>
+			  				<div class="col-xs-5 col-sm-2 col-md-2 col-lg-2">
+								<input type="number" name="differenceTemp" id="inputTemperatureMargin" class="form-control" value="0.5" min="0" max="3" step="0.1" required="required" title="Diferencia Tª">
+								</div>
+						</div>
+						<div class="form-group">
+							<label for="inputProbeOffset" class="col-xs-7 col-sm-2 col-md-2 col-lg-2">Desfase sonda:</label>
+							<div class="col-xs-5 col-sm-2 col-md-2 col-lg-2">
+								<input type="number" name="tempOffset" id="inputProbeOffset" class="form-control" value="0.0" min="-10" max="10" step="0.1" required="required" title="Desfase">
+							</div>
+						</div>		
+						</div>
+						<div class="form-group">
+							<label for="inputMode" class="col-xs-12 col-sm-2 col-md-2 col-lg-2">Modo:</label>
+							<div class="col-xs-12 col-sm-10 col-md-10 col-lg-10">
+								<label class="radio-inline">
+								  <input type="radio" name="wokingModeOptions" id="workingMode0" value="0" checked> Frío / Calor
+								</label>
+								<label class="radio-inline">
+								  <input type="radio" name="wokingModeOptions" id="workingMode-1" value="-1">Frío
+								</label>
+								<label class="radio-inline">
+								  <input type="radio" name="wokingModeOptions" id="workingMode1" value="1">Calor	
+								</label>												
+							</div>
+						</div>
+						<br>
+						<br>
+						<br>
+						<br>
+						<div class="form-group">
+							<div class="col-sm-10 col-sm-offset-2 text-center">
+								<button type="submit" class="btn btn-primary">Guardar</button>
+								<button type="button" class="btn btn-default" onclick="viewMain();">Cancelar</button>
+							</div>
+						</div>
+						<br>
+						<br>
+				  	</form>
+				</div>
+			</div>
+		</div>
+		<!-- jQuery -->
+		<script src="//code.jquery.com/jquery.js"></script>
+		<!-- Bootstrap JavaScript -->
+		<script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+		<script>
+			var _temperatureSet;
+			var _temperatureMargin;
+			var _temperatureRead;
+			var _temperatureTime;
+			var _probeOffset;
+			var _actionMode;
+			var _workingMode;
+			var _configReaded = false;
+
+			/* -------------------------------------------------------------------
+			 * Cuando se termine de cargar la pagina mostramos vista principal
+			 * y cargamos los datos de Arduino.
+			 * -----------------------------------------------------------------*/
+			$(document).ready(function() {
+				$("#config-container").toggle(false);
+				$("#noActionLabel").toggle(false);
+				$("#coolingLabel").toggle(false);
+				$("#heatingLabel").toggle(false);
+				getArduinoData();
+			});
+
+			// Ejecutar de forma automtica la carga de información de Arduino cada 5 segundos
+	  		setInterval(getArduinoData, 5000);
+
+
+			/* -------------------------------------------------------------------
+			 * Muestra la vista de configuracion
+			 * -----------------------------------------------------------------*/
+			function viewConfiguration() {
+
+				// Cargamos la configuracion actual
+				$("#inputTemperatureSet").val(_temperatureSet);
+				$("#inputTemperatureMargin").val(_temperatureMargin);
+				$("#inputProbeOffset").val(_probeOffset);
+				$("#workingMode" + _workingMode.toString()).prop("checked", true);
+
+				// Cambiamos la vista
+				$("#main-container").toggle(false);
+				$("#config-container").toggle(true);
+			}
+
+			/* -------------------------------------------------------------------
+			 * Muestra la vista principal
+			 * -----------------------------------------------------------------*/
+			function viewMain() {
+
+				$("#config-container").toggle(false);
+				$("#main-container").toggle(true);
+			}
+
+			/* -------------------------------------------------------------------
+			 * Obtiene con una llamada Ajax la información de Arduino
+			 * -----------------------------------------------------------------*/
+			function getArduinoData() {
+				$.ajax({ 
+					type: "GET",
+					dataType: "jsonp",
+					url: "http://arduino.local/data/get",
+					success: function(data){    
+						_temperatureSet    = data.value.temperatureSet;
+						_temperatureMargin = data.value.temperatureMargin;
+						_temperatureRead   = data.value.temperatureRead;   
+						_temperatureTime   = data.value.temperatureTime;
+						_probeOffset       = data.value.probeOffset;
+						_actionMode        = data.value.actionMode;
+						_workingMode       = data.value.workingMode;
+						showArduinoData();
+					}
+				});		
+			}
+
+			/* -------------------------------------------------------------------
+			 * Muestra los datos leidos de Arduino en la patalla
+			 * -----------------------------------------------------------------*/
+			function showArduinoData() {
+
+				// La informacion de Lectura la mostramos siempre:
+				$("#temperatureRead").text(_temperatureRead+"ºC");
+				$("#temperatureTime").text(_temperatureTime);
+				$("#temperatureSet").text(_temperatureSet+"ºC");
+				$("#temperatureMargin").text(_temperatureMargin+"ºC");
+
+				// Modo de trabajo
+				$("#noActionLabel").toggle(false);
+				$("#coolingLabel").toggle(false);
+				$("#heatingLabel").toggle(false);
+				if (_actionMode == "-1") {
+					$("#coolingLabel").toggle(true);
+				}
+				if (_actionMode == "0") {
+					$("#noActionLabel").toggle(true);
+				}
+				if (_actionMode == "1") {
+					$("#heatingLabel").toggle(true);
+				}
+
+			}
+
+			/* -------------------------------------------------------------------
+			 * Guardar la configuracion en Arduino
+			 * -----------------------------------------------------------------*/
+			function saveConfiguration() {
+
+				_temperatureSet    = $("#inputTemperatureSet").val();
+				_temperatureMargin = $("#inputTemperatureMargin").val();
+				_probeOffset       = $("#inputProbeOffset").val();
+				_workingMode       = $('input:checked').val();
+
+				$("#temperatureSet").val(_temperatureSet);
+				$("#temperatureMargin").val(_temperatureMargin);
+
+				// Enviamos la temperatura objetivo a Arduino
+				$.getJSON("http://arduino.local/data/put/temperatureSet/" + _temperatureSet);
+
+				// Enviamos el margen de temperatura a Arduino
+				$.getJSON("http://arduino.local/data/put/temperatureMargin/" + _temperatureMargin);
+
+				// Enviamos el desplazamiento de la sonda a Arduino
+				$.getJSON("http://arduino.local/data/put/probeOffset/" + _probeOffset);
+
+				// Enviamos el modo de trabajo Arduino
+				$.getJSON("http://arduino.local/data/put/workingMode/" + _workingMode);
+
+				// Le indicamos a Arduino que la configuracion ha cambiado
+				$.getJSON("http://arduino.local/data/put/configChanged/1");
+
+				//_configReaded = false;
+
+				viewMain();
+			}
+
+		</script>
+	</body>
+</html>
