@@ -199,7 +199,7 @@ void readTemperature() {
 void readServerTime() {  
   Process time;
   _temperatureTime = "";
-  time.runShellCommand("date +\"%d/%m/%Y %H:%M.%S\"");
+  time.runShellCommand("date +\"%d/%m/%Y -- %H:%M.%S\"");
   while (time.available()) {
     char c = time.read();
     if (c != '\n') _temperatureTime += c;
