@@ -238,7 +238,11 @@ void readConfigFile() {
     configFile.close();
     } 
   } 
-  Serial.print("--Configuracion--\n\ntemperatureSet = ");
+  printConfig();
+}
+
+void printConfig() {
+  Serial.print("\n--Configuracion--\n\ntemperatureSet = ");
   Serial.println(_temperatureSet);
   Serial.print("temperatureMargin = ");
   Serial.println(_temperatureMargin);
@@ -247,7 +251,9 @@ void readConfigFile() {
   Serial.print("workingMode = ");
   Serial.println(_workingMode);
   Serial.println();
+
 }
+
 
 /**
   * Escribe los datos de configuracion a un fichero. Se almacenan:
@@ -315,13 +321,14 @@ boolean readConfigFromLinux() {
     _temperatureSet    = readFloatDataFromLinux(DATA_TEMPERATURE_SET);
     _temperatureMargin = readFloatDataFromLinux(DATA_TEMPERATURE_MARGIN);
     _probeOffset       = readFloatDataFromLinux(DATA_PROBE_OFFSET);
-    _workingMode       = readFloatDataFromLinux(DATA_WORKING_MODE);
+    _workingMode       = (int)readFloatDataFromLinux(DATA_WORKING_MODE);
     // Cambiamos la bandera a 0 para que indicar que ya esta leida la configuracion
-    Bridge.put(DATA_CONFIG_CHANGE, "0");
+    Bridge.put(DATA_CONFIG_CHANGE, "0");    
   }
   
   // Devolvera "true" si la configuracion se ha leido de Linux y "false" en caso contrario.
   return configChanged == "1";
+  
 }
 
 /**
