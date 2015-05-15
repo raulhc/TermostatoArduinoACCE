@@ -37,10 +37,13 @@
 				</div>
 				<div class="panel-body">
 					<div class="container">
-						<div class="col-xs-6 col-sm-6 col-md-6 col-lg-6">
+						<div class="col-xs-4 col-sm-4 col-md-4 col-lg-4">
 							<h4 class="text-center">Temperatura: <span class="label label-success" id="temperatureSet"></span></h4>
 						</div>
-						<div class="col-xs-6 col-sm-6 col-md-6 col-lg-6">
+						<div class="col-xs-4 col-sm-4 col-md-4 col-lg-4">
+							<h4 class="text-center"><span class="label" id="workingMode"></span></h4>
+						</div>
+						<div class="col-xs-4 col-sm-4 col-md-4 col-lg-4">
 							<h4 class="text-center">Margen: <span class="label label-success" id="temperatureMargin"></span></h4>	
 						</div>
 					</div>
@@ -122,6 +125,7 @@
 			var _actionMode;
 			var _workingMode;
 			var _configReaded = false;
+			var _gettingData = false;
 
 			/* -------------------------------------------------------------------
 			 * Cuando se termine de cargar la pagina mostramos vista principal
@@ -168,6 +172,8 @@
 			 * Obtiene con una llamada Ajax la información de Arduino
 			 * -----------------------------------------------------------------*/
 			function getArduinoData() {
+				if (_gettingData) return;
+				_gettingData = true;
 				$.ajax({ 
 					type: "GET",
 					dataType: "jsonp",
@@ -181,6 +187,9 @@
 						_actionMode        = data.value.actionMode;
 						_workingMode       = data.value.workingMode;
 						showArduinoData();
+					},
+					complete: function() {
+						_gettingData = false;
 					}
 				});		
 			}
@@ -196,7 +205,7 @@
 				$("#temperatureSet").text(_temperatureSet+"ºC");
 				$("#temperatureMargin").text(_temperatureMargin+"ºC");
 
-				// Modo de trabajo
+				// Modo de accion
 				$("#noActionLabel").toggle(false);
 				$("#coolingLabel").toggle(false);
 				$("#heatingLabel").toggle(false);
@@ -208,6 +217,20 @@
 				}
 				if (_actionMode == "1") {
 					$("#heatingLabel").toggle(true);
+				}
+
+				// Modo de trabajo
+				if (_workingMode == "-1") {
+					$("#workingMode").text("Solo Frío");
+					$("#workingMode").removeClass('label-default').removeClass('label-danger').addClass('label-primary')
+				}
+				if (_workingMode == "0") {
+					$("#workingMode").text("Frío / Calor");
+					$("#workingMode").removeClass('label-primary').removeClass('label-danger').addClass('label-default')
+				}
+				if (_workingMode == "1") {
+					$("#workingMode").text("Solo Calor");
+					$("#workingMode").removeClass('label-default').removeClass('label-primary').addClass('label-danger')
 				}
 
 			}
@@ -242,6 +265,7 @@
 
 				//_configReaded = false;
 
+				getArduinoData();
 				viewMain();
 			}
 
