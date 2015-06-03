@@ -22,6 +22,7 @@
 #define DATA_ACTION_MODE        "actionMode"
 #define DATA_CONFIG_CHANGE      "configChanged"
 #define DATA_WORKING_MODE       "workingMode"
+#define CHANGE_INTERVAL         1000 * 30
 
 OneWire oneWire(ONE_WIRE_BUS);       // Creamos objeto para comunicarnos con dispositivos 1-wire.
 DallasTemperature sensors(&oneWire); // Creamos objeto para comunicarnos con sensores de temperatura.
@@ -33,6 +34,8 @@ String _temperatureTime   = "";   // Fecha y hora en la que se produjo la ultima
 float  _temperatureMargin = 0.5;  // Margen admisible en el mantenimiento de la temperatura
 float  _probeOffset       = 0.0;  // Desplazamiento de sonda. 
 int    _workingMode       = 0;    // Indica el modo de trabajo: -1 Solo enfriar, 0 Frio / Calor, 1 Solo Calentar
+bool   _changeActionMode  = false;
+long   _previousMillis    = 0;
 
 /**
   * Configuracion de Arduino
@@ -77,7 +80,7 @@ void loop() {
   getActionMode();
   
   // Procesamos la accion a ejecutar
-  processAction();
+  if (!_changeActionMode) processAction();
   
   // Escribir los datos a la parte Linux
   writeDataToLinux();
@@ -87,6 +90,9 @@ void loop() {
     // Si ha cambiado escribimos la configuracion en la microSD
     writeConfigFile();
   }
+  
+  // Control de contador de cambio de accion
+  changeActionCountdown();
   
   // *** DEPURACION *** 
 
@@ -156,6 +162,8 @@ void processAction() {
   */
 void getActionMode() {
   
+  int currentActionMode = _actionMode;
+  
   // Por defecto indicamos que no es necesaria accion alguna
   _actionMode = 0;
   
@@ -174,6 +182,23 @@ void getActionMode() {
   // el valor de este coincide con el del modo de trabajo, en otro caso no se realizara accion alguna
   if (_workingMode != 0 && _workingMode != _actionMode) _actionMode = 0;
   
+  if (currentActionMode != _actionMode) {
+    _changeActionMode = true;
+    _previousMillis   = millis();
+  }
+  
+}
+
+/**
+ *  Contador de tiempo entre cambios de accion
+ */
+void changeActionCountdown() {
+  if (_changeActionMode) {
+    unsigned long currentMillis = millis();
+    if (currentMillis - _previousMillis > CHANGE_INTERVAL) {
+      _changeActionMode = false;
+    }
+  }
 }
 
 
@@ -225,7 +250,7 @@ void readConfigFile() {
       String property;
       float value;
       
-      // Leemos los tres datos posibles y los asignamos a la propiedad que corresponga
+      // Leemos los cuatro datos posibles y los asignamos a la propiedad que corresponga
       readConfigData(configFile, property, value);
       setConfigData(property, value);
       readConfigData(configFile, property, value);
@@ -279,9 +304,10 @@ void writeConfigFile() {
   * Asigna el valor leido de configuracion a la propiedad que corresponde. 
   */
 void setConfigData(String &property, float& value) {
-    if (property == DATA_TEMPERATURE_SET) _temperatureSet = value;
+    if (property == DATA_TEMPERATURE_SET)    _temperatureSet    = value;
     if (property == DATA_TEMPERATURE_MARGIN) _temperatureMargin = value;
-    if (property == DATA_PROBE_OFFSET) _probeOffset = value;
+    if (property == DATA_PROBE_OFFSET)       _probeOffset       = value;
+    if (property == DATA_WORKING_MODE)       _workingMode       = value;
 }
 
 /**
