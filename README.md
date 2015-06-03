@@ -1,4 +1,4 @@
 # Termostato Arduino ACCE
-Termostasto Arduino para el control de temperaturas en el proceso de elaboración de cerveza casera.
+Esta modificación sera para que el Termostato solo funcione en modo calor o frío, actuando solo sobre uno de los reles. Este rele actuara sobre una vávula de tres vías que hará que circule el agua sobre la camisa del fermentador cuando sea necesario.
 
-http://www.cerveceros-caseros.com/index.php/foro10/equipos/104968-termostato-con-arduino
+Se añade una segunda sonda para controlar la temperatura del agua de la cubeta del V50. El segundo rele activara el dispostivo que caliente este agua para mantener la temperatura cuando el sistema trabaje en modo calor. Esto se usaría si la temperatura ambiente es inferior a la temperatura de fermentación y es necesario subir la temperatura.
